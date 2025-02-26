@@ -18,13 +18,13 @@ Anda dapat menginstalnya dengan menjalankan perintah berikut:
   pip install streamlit
   pip install -r requirements.txt
   ```
-### 📂 2. Struktur Proyek
+## 📂 2. Struktur Proyek
 - **/data:** Berisi dataset dalam format .csv.
 - **/dashboard:** Berisi script Streamlit untuk visualisasi.
 - **notebook.ipynb:** Notebook untuk eksplorasi dan analisis data.
 
 
-### 📈 3. Menjalankan Dashboard Interaktif
+## 📈 3. Menjalankan Dashboard Interaktif
 Gunakan Streamlit untuk menampilkan visualisasi data interaktif:
   ```shell
   cd Submission-Dicoding-Belajar-Analisis-Data-dengan-Python/dashboard/
