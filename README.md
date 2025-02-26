@@ -18,11 +18,11 @@ Anda dapat menginstalnya dengan menjalankan perintah berikut:
   pip install streamlit
   pip install -r requirements.txt
   ```
+
 ## 📂 2. Struktur Proyek
 - **/data:** Berisi dataset dalam format .csv.
 - **/dashboard:** Berisi script Streamlit untuk visualisasi.
 - **notebook.ipynb:** Notebook untuk eksplorasi dan analisis data.
-
 
 ## 📈 3. Menjalankan Dashboard Interaktif
 Gunakan Streamlit untuk menampilkan visualisasi data interaktif:
@@ -30,3 +30,6 @@ Gunakan Streamlit untuk menampilkan visualisasi data interaktif:
   cd Submission-Dicoding-Belajar-Analisis-Data-dengan-Python/dashboard/
   streamlit run dashboard.py
   ```
+
+## Cek dashboard online di sini:
+### 🔗 [Bike Sharing Data Analysis Dashboard](https://bike-sharing-data-analysis-warlord194.streamlit.app/)  
