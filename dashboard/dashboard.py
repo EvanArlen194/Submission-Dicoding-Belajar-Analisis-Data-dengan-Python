@@ -83,8 +83,8 @@ def main():
     Aplikasi ini menampilkan berbagai visualisasi untuk memahami pola penyewaan sepeda berdasarkan waktu, cuaca, dan faktor lainnya.
     """)
     
-    day_df = pd.read_csv("day.csv")
-    hour_df = pd.read_csv("hour.csv")
+    day_df = pd.read_csv("dashboard/day.csv")
+    hour_df = pd.read_csv("dashboard/hour.csv")
     
     day_clean = clean_bike_data(day_df)
     hour_clean = clean_bike_data(hour_df, is_hourly=True)
