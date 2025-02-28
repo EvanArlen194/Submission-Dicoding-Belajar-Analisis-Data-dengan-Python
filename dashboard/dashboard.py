@@ -153,6 +153,23 @@ ax.legend()
 
 st.pyplot(fig)
 
+# 📅 Weekday Rental Patterns
+st.subheader("📅 Total Bike Rentals by Day of the Week")
+
+weekday_rentals = day_clean.groupby("day_of_week")["total_rentals"].sum().reindex(
+    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+).reset_index()
+
+st.dataframe(weekday_rentals)
+fig, ax = plt.subplots(figsize=(10, 6))
+sns.barplot(x='day_of_week', y='total_rentals', data=weekday_rentals, palette='coolwarm', ax=ax)
+ax.set_title('Total Bike Rentals by Day of the Week')
+ax.set_xlabel('Day of Week')
+ax.set_ylabel('Total Rentals')
+
+st.pyplot(fig)
+
+
 # Seasonal Bike Rentals
 st.subheader("🌦️ Total Bike Rentals by Season")
 
@@ -213,12 +230,16 @@ st.pyplot(fig)
 st.markdown("---")
 st.markdown(
     """
-    <div style="text-align: center;">
-        <h3>🚴 Bike Sharing Data Dashboard</h3>
+    <div style="text-align: center; font-size: 16px;">
+        <h3 style="color: #ff4b4b;">🚴 Bike Sharing Data Dashboard</h3>
         <p>Made with ❤️ by <b>Evan Arlen Handy</b></p>
-        <p>📧 <a href="mailto:cloaaa00@gmail.com" style="text-decoration:none;">cloaaa00@gmail.com</a></p>
-        <p>🔗 <a href="https://www.dicoding.com/users/warlord194" target="_blank" style="text-decoration:none;">My Dicoding Profile</a></p>
+        <p>📧 <a href="mailto:cloaaa00@gmail.com" target="_blank" style="text-decoration:none; color: #1f77b4;">
+            cloaaa00@gmail.com</a></p>
+        <p>🔗 <a href="https://www.dicoding.com/users/warlord194" target="_blank" style="text-decoration:none; color: #ff7f0e;">
+            My Dicoding Profile</a></p>
+        <p style="font-size: 14px; color: gray;">© 2024 Bike Sharing Analytics. All rights reserved.</p>
     </div>
     """,
     unsafe_allow_html=True
 )
+
