@@ -3,187 +3,222 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
-from matplotlib.ticker import FuncFormatter
 import plotly.express as px
+from matplotlib.ticker import FuncFormatter
 
+# Set Streamlit Page Config
+st.set_page_config(page_title="Bike Sharing Dashboard", layout="wide")
+
+# Load Data
+@st.cache_data
+def load_data():
+    day_df = pd.read_csv("day.csv")
+    hour_df = pd.read_csv("hour.csv")
+    return day_df, hour_df
+
+day_df, hour_df = load_data()
+
+# Data Cleaning Function
 def clean_bike_data(df, is_hourly=False):
-    """
-    Clean and transform bike sharing dataset.
+    df = df.copy()
+    df.drop(columns=['instant', 'workingday'], errors='ignore', inplace=True)
+    df['dteday'] = pd.to_datetime(df['dteday'])
     
-    Parameters:
-    df (DataFrame): DataFrame to clean.
-    is_hourly (bool): Whether the dataset contains hourly data.
-    
-    Returns:
-    DataFrame: Cleaned DataFrame.
-    """
-    cleaned_df = df.copy()
-    
-    if 'instant' in cleaned_df.columns:
-        cleaned_df.drop('instant', axis=1, inplace=True)
-    if 'workingday' in cleaned_df.columns:
-        cleaned_df.drop('workingday', axis=1, inplace=True)
-    
-    cleaned_df['dteday'] = pd.to_datetime(cleaned_df['dteday'])
-    
-    cat_columns = ['season', 'mnth', 'holiday', 'weekday', 'weathersit']
-    for col in cat_columns:
-        if col in cleaned_df.columns:
-            cleaned_df[col] = cleaned_df[col].astype('category')
-    
-    column_mapping = {
-        'yr': 'year',
-        'mnth': 'month',
-        'weekday': 'day_of_week', 
-        'weathersit': 'weather',
-        'windspeed': 'wind_speed',
-        'cnt': 'total_rentals',
-        'hum': 'humidity',
-    }
+    # Rename Columns
+    col_map = {'yr': 'year', 'mnth': 'month', 'weekday': 'day_of_week', 'weathersit': 'weather', 'cnt': 'total_rentals'}
     if is_hourly:
-        column_mapping['hr'] = 'hour'
-    cleaned_df.rename(columns=column_mapping, inplace=True)
+        col_map['hr'] = 'hour'
+    df.rename(columns=col_map, inplace=True)
+    
+    # Categorical Mapping
+    season_map = {1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'}
+    df['season'] = df['season'].map(season_map)
 
-    season_mapping = {1: 'Spring', 2: 'Summer', 3: 'Fall', 4: 'Winter'}
-    cleaned_df['season'] = cleaned_df['season'].map(season_mapping)
+    month_map = {1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
+                 7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'}
+    df['month'] = df['month'].map(month_map)
+
+    weather_map = {1: 'Clear', 2: 'Cloudy/Misty', 3: 'Light Rain/Snow', 4: 'Heavy Rain/Snow'}
+    df['weather'] = df['weather'].map(weather_map)
+
+    day_map = {0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday',
+               4: 'Thursday', 5: 'Friday', 6: 'Saturday'}
+    df['day_of_week'] = df['day_of_week'].map(day_map)
+
+    df['year'] = df['year'].map({0: '2011', 1: '2012'})
     
-    month_mapping = {
-        1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
-        7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
-    }
-    cleaned_df['month'] = cleaned_df['month'].map(month_mapping)
-    
-    weather_mapping = {
-        1: 'Clear', 2: 'Cloudy/Misty', 3: 'Light Rain/Snow', 4: 'Heavy Rain/Snow'
-    }
-    cleaned_df['weather'] = cleaned_df['weather'].map(weather_mapping)
-    
-    day_mapping = {
-        0: 'Sunday', 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday',
-        4: 'Thursday', 5: 'Friday', 6: 'Saturday'
-    }
-    cleaned_df['day_of_week'] = cleaned_df['day_of_week'].map(day_mapping)
-    
-    cleaned_df['year'] = cleaned_df['year'].map({0: '2011', 1: '2012'})
-    
-    cleaned_df['humidity'] = cleaned_df['humidity'] * 100
-    
-    cleaned_df['day_type'] = cleaned_df['day_of_week'].apply(
+    df['day_type'] = df['day_of_week'].apply(
         lambda x: 'Weekend' if x in ['Saturday', 'Sunday'] else 'Weekday'
     )
     
-    cleaned_df['temp_celsius'] = cleaned_df['temp'] * 41
+    df['temp'] = df['temp'] * 41
     
-    return cleaned_df
+    df['month_year'] = df['dteday'].dt.to_period('M')
+    
+    return df
 
-def main():
-    st.title("🚴‍♂️ Bike Sharing Data Analysis 🚴‍♀️")
-    st.markdown("""
-    **Selamat datang di aplikasi analisis data penyewaan sepeda!**  
-    Aplikasi ini menampilkan berbagai visualisasi untuk memahami pola penyewaan sepeda berdasarkan waktu, cuaca, dan faktor lainnya.
-    """)
-    
-    day_df = pd.read_csv("dashboard/day.csv")
-    hour_df = pd.read_csv("dashboard/hour.csv")
-    
-    day_clean = clean_bike_data(day_df)
-    hour_clean = clean_bike_data(hour_df, is_hourly=True)
-    
-    st.sidebar.header("📊 Dataset Preview")
-    if st.sidebar.checkbox("Tampilkan dataset"):
-        st.write("### Dataset yang Telah Dibersihkan")
-        st.dataframe(day_clean.head())
-    
-    # Visualisasi 1: Pola Penyewaan per Jam (Weekday vs Weekend)
-    st.header("⏰ Pola Penyewaan per Jam (Weekday vs Weekend)")
-    st.markdown("""
-    Berikut adalah pola penyewaan sepeda per jam pada hari kerja (Weekday) dan akhir pekan (Weekend).
-    """)
-    weekday_hourly = hour_clean[hour_clean['day_type'] == 'Weekday'].groupby('hour')['total_rentals'].mean().reset_index()
-    weekend_hourly = hour_clean[hour_clean['day_type'] == 'Weekend'].groupby('hour')['total_rentals'].mean().reset_index()
-    
-    fig, ax = plt.subplots(figsize=(12, 6))
-    ax.plot(weekday_hourly['hour'], weekday_hourly['total_rentals'], label='Weekday', marker='o', color='#1f77b4')
-    ax.plot(weekend_hourly['hour'], weekend_hourly['total_rentals'], label='Weekend', marker='o', color='#ff7f0e')
-    ax.set_xlabel('Hour of Day')
-    ax.set_ylabel('Average Rentals')
-    ax.set_title('Average Hourly Bike Rentals: Weekday vs Weekend')
-    ax.legend()
-    st.pyplot(fig)
-    
-    # Visualisasi 2: Penyewaan Harian berdasarkan Hari dalam Seminggu
-    st.header("📅 Penyewaan Harian berdasarkan Hari dalam Seminggu")
-    st.markdown("""
-    Berikut adalah rata-rata penyewaan sepeda berdasarkan hari dalam seminggu.
-    """)
-    daily_rentals = day_clean.groupby('day_of_week')['total_rentals'].mean().reindex(
-        ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-    ).reset_index()
-    
-    fig, ax = plt.subplots(figsize=(12, 6))
-    sns.barplot(x='day_of_week', y='total_rentals', data=daily_rentals, palette='viridis', ax=ax)
-    ax.set_title('Average Daily Bike Rentals by Day of Week')
-    ax.set_xlabel('Day of Week')
-    ax.set_ylabel('Average Rentals')
-    st.pyplot(fig)
-    
-    # Visualisasi 3: Penyewaan berdasarkan Musim
-    st.header("🌦️ Penyewaan berdasarkan Musim")
-    st.markdown("""
-    Berikut adalah total penyewaan sepeda berdasarkan musim.
-    """)
-    seasonal_rentals = day_clean.groupby('season')['total_rentals'].sum().reindex(
-        ['Spring', 'Summer', 'Fall', 'Winter']
-    ).reset_index()
-    
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.barplot(x='season', y='total_rentals', data=seasonal_rentals, palette='viridis', ax=ax)
-    ax.set_title('Total Bike Rentals by Season')
-    ax.set_xlabel('Season')
-    ax.set_ylabel('Total Rentals')
-    ax.yaxis.set_major_formatter(FuncFormatter(lambda x, _: f'{x/1000:.0f}K'))
-    st.pyplot(fig)
-    
-    # Visualisasi 4: Distribusi Tipe Pengguna (Casual vs Registered)
-    st.header("👥 Distribusi Tipe Pengguna (Casual vs Registered)")
-    st.markdown("""
-    Berikut adalah distribusi penyewaan sepeda berdasarkan tipe pengguna (Casual vs Registered).
-    """)
-    total_casual = day_clean['casual'].sum()
-    total_registered = day_clean['registered'].sum()
-    
-    fig, ax = plt.subplots(figsize=(8, 8))
-    ax.pie([total_casual, total_registered], labels=['Casual', 'Registered'], autopct='%1.1f%%', 
-           colors=['#ff7f0e', '#1f77b4'], explode=(0.05, 0), startangle=90, shadow=True)
-    ax.set_title('Distribution of Rental Types')
-    st.pyplot(fig)
-    
-    # Visualisasi 5: Pengaruh Cuaca terhadap Penyewaan
-    st.header("☀️ Pengaruh Cuaca terhadap Penyewaan")
-    st.markdown("""
-    Berikut adalah rata-rata penyewaan sepeda berdasarkan kondisi cuaca.
-    """)
-    weather_impact = day_clean.groupby('weather')['total_rentals'].mean().reset_index()
-    
-    fig, ax = plt.subplots(figsize=(12, 6))
-    sns.barplot(x='weather', y='total_rentals', data=weather_impact, palette='viridis', ax=ax)
-    ax.set_title('Average Daily Rentals by Weather Condition')
-    ax.set_xlabel('Weather Condition')
-    ax.set_ylabel('Average Rentals')
-    st.pyplot(fig)
-    
-    # Visualisasi 6: Hubungan Suhu dan Penyewaan
-    st.header("🌡️ Hubungan Suhu dan Penyewaan")
-    st.markdown("""
-    Berikut adalah hubungan antara suhu (°C) dan jumlah penyewaan sepeda.
-    """)
-    fig, ax = plt.subplots(figsize=(10, 6))
-    sns.regplot(x='temp_celsius', y='total_rentals', data=day_clean, scatter_kws={'alpha':0.5}, 
-                line_kws={'color': 'red'}, ax=ax)
-    ax.set_title('Relationship Between Temperature and Bike Rentals')
-    ax.set_xlabel('Temperature (°C)')
-    ax.set_ylabel('Daily Rentals')
-    st.pyplot(fig)
+# Cleaned Data
+day_clean = clean_bike_data(day_df)
+hour_clean = clean_bike_data(hour_df, is_hourly=True)
 
-if __name__ == "__main__":
-    main()
+# Sidebar
+st.sidebar.header("Filter Data")
+selected_season = st.sidebar.selectbox("Select Season", ["All"] + list(day_clean["season"].unique()))
+selected_weather = st.sidebar.selectbox("Select Weather", ["All"] + list(day_clean["weather"].unique()))
+
+# Filter Data
+filtered_data = day_clean.copy()
+if selected_season != "All":
+    filtered_data = filtered_data[filtered_data["season"] == selected_season]
+if selected_weather != "All":
+    filtered_data = filtered_data[filtered_data["weather"] == selected_weather]
+
+# Dashboard Title
+st.title("🚲 Bike Sharing Data Dashboard")
+st.markdown("### Explore Bike Sharing Rental Patterns 📊")
+
+# Metrics
+col1, col2, col3 = st.columns(3)
+col1.metric("Total Rentals", f"{filtered_data['total_rentals'].sum():,}")
+col2.metric("Average Daily Rentals", f"{filtered_data['total_rentals'].mean():,.2f}")
+col3.metric("Total Days", f"{filtered_data.shape[0]}")
+
+# Distribution of Numerical Variables
+st.subheader("📊 Distribution of Numerical Variables")
+
+numerical_cols = ['temp', 'hum', 'windspeed', 'total_rentals']
+fig, axes = plt.subplots(2, 2, figsize=(15, 10))
+
+for i, col in enumerate(numerical_cols):
+    row, col_idx = divmod(i, 2)
+    sns.histplot(day_clean[col], kde=True, ax=axes[row, col_idx])
+    axes[row, col_idx].set_title(f'Distribution of {col}')
+
+plt.tight_layout()
+st.pyplot(fig)
+
+# Distribution of Categorical Variables
+st.subheader("📊 Distribution of Categorical Variables")
+
+categorical_cols = ['season', 'month', 'weather', 'day_of_week']
+fig, axes = plt.subplots(2, 2, figsize=(15, 12))
+
+for i, col in enumerate(categorical_cols):
+    row, col_idx = divmod(i, 2)
+    sns.countplot(data=day_clean, x=col, ax=axes[row, col_idx])
+    axes[row, col_idx].set_title(f'Distribution of {col}')
+    axes[row, col_idx].tick_params(axis='x', rotation=45)
+
+plt.tight_layout()
+st.pyplot(fig)
+
+# Weather vs Rentals
+st.subheader("🌦️ Bike Rentals by Weather Condition")
+
+fig, ax = plt.subplots(figsize=(10, 6))
+sns.boxplot(x='weather', y='total_rentals', data=day_clean, ax=ax)
+ax.set_title('Bike Rentals by Weather Condition')
+ax.tick_params(axis='x', rotation=45)
+
+st.pyplot(fig)
+
+# Temperature vs Rentals (Casual vs Registered)
+st.subheader("🌡️ Effect of Temperature on Different User Types")
+
+fig, ax = plt.subplots(figsize=(12, 6))
+sns.scatterplot(x='temp', y='casual', data=day_clean, label='Casual', ax=ax)
+sns.scatterplot(x='temp', y='registered', data=day_clean, label='Registered', ax=ax)
+ax.set_title('Effect of Temperature on Different User Types')
+ax.set_xlabel('Temperature (°C)')
+ax.set_ylabel('Number of Rentals')
+ax.legend()
+
+st.pyplot(fig)
+
+
+# Correlation Matrix
+st.subheader("Correlation Matrix of Numerical Variables")
+corr_matrix = day_clean[["temp", "hum", "windspeed", "casual", "registered", "total_rentals"]].corr()
+fig, ax = plt.subplots(figsize=(8, 6))
+sns.heatmap(corr_matrix, annot=True, cmap="coolwarm", fmt=".2f", ax=ax)
+st.pyplot(fig)
+
+# Weekday vs Weekend Hourly Patterns
+st.subheader("📅 Weekday vs Weekend Hourly Bike Rentals")
+
+# Aggregation for weekday vs weekend patterns
+weekday_hourly = hour_clean[hour_clean['day_type'] == 'Weekday'].groupby('hour')['total_rentals'].mean().reset_index()
+weekend_hourly = hour_clean[hour_clean['day_type'] == 'Weekend'].groupby('hour')['total_rentals'].mean().reset_index()
+
+fig, ax = plt.subplots(figsize=(12, 6))
+ax.plot(weekday_hourly['hour'], weekday_hourly['total_rentals'], label='Weekday', marker='o', color='#1f77b4')
+ax.plot(weekend_hourly['hour'], weekend_hourly['total_rentals'], label='Weekend', marker='o', color='#ff7f0e')
+
+ax.set_xlabel('Hour of Day')
+ax.set_ylabel('Average Rentals')
+ax.set_title('Average Hourly Bike Rentals: Weekday vs Weekend')
+ax.set_xticks(range(24))
+ax.grid(True, alpha=0.3)
+ax.legend()
+
+st.pyplot(fig)
+
+# Seasonal Bike Rentals
+st.subheader("🌦️ Total Bike Rentals by Season")
+
+# Aggregate total rentals per season
+seasonal_rentals = day_clean.groupby('season')['total_rentals'].sum().reindex(
+    ['Spring', 'Summer', 'Fall', 'Winter']
+).reset_index()
+
+fig, ax = plt.subplots(figsize=(10, 6))
+sns.barplot(x='season', y='total_rentals', data=seasonal_rentals, palette='viridis', ax=ax)
+ax.set_title('Total Bike Rentals by Season')
+ax.set_xlabel('Season')
+ax.set_ylabel('Total Rentals')
+
+st.pyplot(fig)
+
+# Monthly Bike Rentals by User Type
+st.subheader("📅 Monthly Bike Rentals by User Type")
+
+# Aggregate total rentals per month for casual & registered users
+user_type_monthly = day_clean.groupby(['month_year']).agg({
+    'casual': 'sum',
+    'registered': 'sum',
+    'total_rentals': 'sum'
+}).reset_index()
+
+# Convert Period to string for better plotting
+user_type_monthly['month_year_str'] = user_type_monthly['month_year'].astype(str)
+
+fig, ax = plt.subplots(figsize=(14, 7))
+width = 0.35
+x = np.arange(len(user_type_monthly))
+
+ax.bar(x - width/2, user_type_monthly['casual'], width, label='Casual', color='#ff7f0e')
+ax.bar(x + width/2, user_type_monthly['registered'], width, label='Registered', color='#1f77b4')
+
+ax.set_xlabel('Month')
+ax.set_ylabel('Number of Rentals')
+ax.set_title('Monthly Bike Rentals by User Type')
+ax.set_xticks(x)
+ax.set_xticklabels(user_type_monthly['month_year_str'], rotation=45)
+ax.legend()
+ax.grid(True, alpha=0.3)
+
+st.pyplot(fig)
+
+# Footer Section
+st.markdown("---")
+st.markdown(
+    """
+    <div style="text-align: center;">
+        <h3>🚴 Bike Sharing Data Dashboard</h3>
+        <p>Made with ❤️ by <b>Evan Arlen Handy</b></p>
+        <p>📧 <a href="mailto:cloaaa00@gmail.com" style="text-decoration:none;">cloaaa00@gmail.com</a></p>
+        <p>🔗 <a href="https://www.dicoding.com/users/warlord194" target="_blank" style="text-decoration:none;">My Dicoding Profile</a></p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
