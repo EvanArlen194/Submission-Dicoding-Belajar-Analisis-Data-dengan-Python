@@ -112,16 +112,6 @@ for i, col in enumerate(categorical_cols):
 plt.tight_layout()
 st.pyplot(fig)
 
-# Weather vs Rentals
-st.subheader("🌦️ Bike Rentals by Weather Condition")
-
-fig, ax = plt.subplots(figsize=(10, 6))
-sns.boxplot(x='weather', y='total_rentals', data=day_clean, ax=ax)
-ax.set_title('Bike Rentals by Weather Condition')
-ax.tick_params(axis='x', rotation=45)
-
-st.pyplot(fig)
-
 # Temperature vs Rentals (Casual vs Registered)
 st.subheader("🌡️ Effect of Temperature on Different User Types")
 
@@ -176,6 +166,16 @@ sns.barplot(x='season', y='total_rentals', data=seasonal_rentals, palette='virid
 ax.set_title('Total Bike Rentals by Season')
 ax.set_xlabel('Season')
 ax.set_ylabel('Total Rentals')
+
+st.pyplot(fig)
+
+# Weather vs Rentals
+st.subheader("🌦️ Bike Rentals by Weather Condition")
+
+fig, ax = plt.subplots(figsize=(10, 6))
+sns.boxplot(x='weather', y='total_rentals', data=day_clean, ax=ax)
+ax.set_title('Bike Rentals by Weather Condition')
+ax.tick_params(axis='x', rotation=45)
 
 st.pyplot(fig)
 
